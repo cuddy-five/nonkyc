@@ -4,8 +4,9 @@ name: Agent Handoff
 # - failed                     -> report it on the issue and add `agent-blocked`
 # - implementer succeeded      -> dispatch the reviewer on the PR it opened or updated
 # - other role succeeded, but dispatched nothing and did not block -> report the stall
-# Runs started by GITHUB_TOKEN (every hop after the first) do not emit workflow_run,
-# so the schedule is the reliable trigger; workflow_run only makes the first hops faster.
+# Runs started by GITHUB_TOKEN (every hop after the first) do not emit workflow_run.
+# The implementer therefore dispatches this workflow as its last action; it waits for
+# running implementers to finish first. The schedule is a backstop.
 # Agent run names have the form "<role> #<issue> r<round>[ <stage>]".
 on:
   workflow_run:
@@ -21,7 +22,7 @@ jobs:
   handoff:
     if: vars.AGENTS_PAUSED != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       actions: write
       issues: write
@@ -30,6 +31,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - name: Wait for running implementers
+        run: |
+          for _ in $(seq 20); do
+            busy=$(gh run list --workflow implementer.lock.yml --limit 10 --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+            [ "$busy" = 0 ] && exit 0
+            sleep 30
+          done
       - name: Sweep
         run: |
           runs=$(gh run list --limit 100 --json displayTitle,status,conclusion,url)

@@ -46,6 +46,7 @@ safe-outputs:
     protected-files:
       policy: blocked
       exclude: [package.json, package-lock.json, README.md, tsconfig.json]
+  dispatch-workflow: [handoff]
   push-to-pull-request-branch:
     target: "*"
     required-title-prefix: "[agent] "
@@ -76,7 +77,7 @@ Issue: #${{ inputs.issue }} · Round: ${{ inputs.round }}
 5. Call `add_comment` on the issue with marker `role=implementer stage=code` and
    verdict `submitted`, summarizing what changed for the overseer.
 
-Your handoff is the `create_pull_request` or `push_to_pull_request_branch` call; never call `noop`.
-Do not dispatch anything; the `Agent Handoff` workflow starts the reviewer once your PR exists.
+6. Last, call the `handoff` tool (no inputs). Agent Handoff waits for this run to finish,
+   then starts the reviewer on your PR. Never call `noop`, and dispatch nothing else.
 Never edit `.github/`, `AGENTS.md`, or `PROJECT.md`. If the plan cannot work as written,
 post verdict `blocked` with the reason and add `agent-blocked` instead of improvising.

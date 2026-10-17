@@ -5,6 +5,8 @@ tools:
   edit:
   github:
     toolsets: [default]
+    # Loop comments come from github-actions[bot]; the default filter hides them.
+    min-integrity: none
 network:
   allowed: [defaults, node, "api.nonkyc.io"]
 runtimes:

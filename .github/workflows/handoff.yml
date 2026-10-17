@@ -1,17 +1,25 @@
 name: Agent Handoff
-# Coordinator, not an agent. Runs after every agent workflow:
-# - implementer succeeded -> dispatch the reviewer on the PR it opened or updated
-# - any agent run failed  -> report it on the issue so the loop never stalls silently
-# - planner/reviewer/verifier succeeded but dispatched nothing and did not block -> report it
+# Coordinator, not an agent. Sweeps every open `agent` issue and looks at the newest loop run:
+# - still running              -> nothing
+# - failed                     -> report it on the issue and add `agent-blocked`
+# - implementer succeeded      -> dispatch the reviewer on the PR it opened or updated
+# - other role succeeded, but dispatched nothing and did not block -> report the stall
+# Runs started by GITHUB_TOKEN (every hop after the first) do not emit workflow_run,
+# so the schedule is the reliable trigger; workflow_run only makes the first hops faster.
 # Agent run names have the form "<role> #<issue> r<round>[ <stage>]".
 on:
   workflow_run:
     workflows: [Agent Planner, Agent Reviewer, Agent Implementer, Agent Verifier, Agent Merge]
     types: [completed]
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: agent-handoff
 permissions: {}
 jobs:
   handoff:
-    if: github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.conclusion != 'cancelled'
+    if: vars.AGENTS_PAUSED != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -21,37 +29,43 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      TITLE: ${{ github.event.workflow_run.display_title }}
-      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-      RUN_URL: ${{ github.event.workflow_run.html_url }}
-      STARTED: ${{ github.event.workflow_run.run_started_at }}
     steps:
-      - name: Route
+      - name: Sweep
         run: |
-          if [[ ! "$TITLE" =~ ^(planner|reviewer|implementer|verifier|merge)\ \#([0-9]+)\ r([0-9]+) ]]; then
-            echo "Not a loop run: $TITLE"; exit 0
-          fi
-          role=${BASH_REMATCH[1]} issue=${BASH_REMATCH[2]} round=${BASH_REMATCH[3]}
+          runs=$(gh run list --limit 100 --json displayTitle,status,conclusion,url)
+          issues=$(gh issue list --label agent --state open --json number,labels \
+            --jq '.[] | select([.labels[].name] | index("agent-blocked") | not) | .number')
 
-          block() {
-            gh issue comment "$issue" --body "<!-- agent-loop role=coordinator stage=$role round=$round verdict=blocked -->
+          for issue in $issues; do
+            latest=$(jq -c --arg i "$issue" \
+              '[.[] | select(.displayTitle | test("^(planner|reviewer|implementer|verifier|merge) #" + $i + " r[0-9]+"))
+               | select(.conclusion != "skipped" and .conclusion != "cancelled")][0] // empty' <<<"$runs")
+            [ -n "$latest" ] || continue
+            title=$(jq -r .displayTitle <<<"$latest")
+            status=$(jq -r .status <<<"$latest")
+            conclusion=$(jq -r .conclusion <<<"$latest")
+            url=$(jq -r .url <<<"$latest")
+            [[ "$title" =~ ^([a-z]+)\ \#[0-9]+\ r([0-9]+) ]]
+            role=${BASH_REMATCH[1]} round=${BASH_REMATCH[2]}
+            echo "#$issue: $title $status $conclusion"
+
+            block() {
+              gh issue comment "$issue" --body "<!-- agent-loop role=coordinator stage=$role round=$round verdict=blocked -->
           ### Loop stopped: $1
-          See $RUN_URL. Fix the cause, remove \`agent-blocked\`, and re-run the failed workflow."
-            gh issue edit "$issue" --add-label agent-blocked
-          }
+          See $url. Fix the cause, remove \`agent-blocked\`, and re-run the stage that stopped."
+              gh issue edit "$issue" --add-label agent-blocked
+              echo "Blocked #$issue: $1" >> "$GITHUB_STEP_SUMMARY"
+            }
 
-          if [ "$CONCLUSION" != success ]; then block "$role run ended with $CONCLUSION"; exit 0; fi
-          [ "$role" = merge ] && exit 0
-
-          if [ "$role" != implementer ]; then
-            blocked=$(gh issue view "$issue" --json labels --jq '[.labels[].name] | index("agent-blocked") != null')
-            next=$(gh run list --limit 50 --json displayTitle,createdAt --jq \
-              "[.[] | select(.createdAt > \"$STARTED\") | select(.displayTitle | test(\"^(planner|reviewer|implementer|verifier|merge) #$issue r\"))] | length")
-            if [ "$blocked" = false ] && [ "$next" = 0 ]; then block "$role finished without handing off to the next role"; fi
-            exit 0
-          fi
-
-          pr=$(gh pr list --head "agent/issue-$issue" --state open --json number --jq '.[0].number')
-          if [ -z "$pr" ]; then block "implementer finished without an open PR on agent/issue-$issue"; exit 0; fi
-          gh workflow run reviewer.lock.yml -f issue="$issue" -f stage=code -f round="$round"
-          echo "Dispatched reviewer for PR #$pr (issue #$issue, round $round)" >> "$GITHUB_STEP_SUMMARY"
+            [ "$status" = completed ] || continue
+            if [ "$conclusion" != success ]; then block "$role run ended with $conclusion"; continue; fi
+            case "$role" in
+              merge) ;;
+              implementer)
+                pr=$(gh pr list --head "agent/issue-$issue" --state open --json number --jq '.[0].number')
+                if [ -z "$pr" ]; then block "implementer finished without an open PR on agent/issue-$issue"; continue; fi
+                gh workflow run reviewer.lock.yml -f issue="$issue" -f stage=code -f round="$round"
+                echo "Dispatched reviewer for PR #$pr (issue #$issue, round $round)" >> "$GITHUB_STEP_SUMMARY" ;;
+              *) block "$role finished without handing off to the next role" ;;
+            esac
+          done

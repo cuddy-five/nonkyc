@@ -8,7 +8,7 @@
 | `.github/workflows/reviewer.md` | gh-aw agent | `stage=plan` or `stage=code`; approves forward or sends back with `round+1`. |
 | `.github/workflows/implementer.md` | gh-aw agent | Round 1 opens PR `agent/issue-N`; later rounds push fixes to it. |
 | `.github/workflows/verifier.md` | gh-aw agent | Clean `npm ci`, `npm test`, `npm run smoke`, live tool calls; dispatches merge or implementer. |
-| `.github/workflows/handoff.yml` | Actions | After the implementer succeeds, dispatches the reviewer. After any agent or merge run fails, comments on the issue and adds `agent-blocked`. |
+| `.github/workflows/handoff.yml` | Actions | Every 5 minutes (and after first-hop runs), checks the newest loop run of each open `agent` issue: dispatches the reviewer after the implementer; blocks the issue on a failed run or on a role that ended without handing off. |
 | `.github/workflows/merge.yml` | Actions | Refuses `.github/`, `AGENTS.md`, `PROJECT.md` changes; runs `npm test`; squash-merges; closes the issue; starts the next `agent-queue` issue. |
 | `.github/workflows/shared/agent-loop.md` | gh-aw import | Tools, network allowlist, shared safe outputs and loop rules. |
 
@@ -31,6 +31,11 @@ checks without writing.
   the tests itself, since `ci.yml` does not fire on agent PRs.
 - The implementer cannot know its PR number when it finishes (gh-aw creates the PR in a
   later job), so `handoff.yml` waits for the whole run to end and then routes.
+- Runs started by `GITHUB_TOKEN` do not emit `workflow_run`, so `handoff.yml` cannot rely
+  on it after the first hop. It sweeps on a 5-minute schedule instead; GitHub may delay
+  scheduled runs, so a stage can take a few extra minutes to start.
+- Agent comments come from `github-actions[bot]`. The GitHub MCP integrity filter hides
+  those by default, so the shared import sets `min-integrity: none`.
 - Threat detection is disabled (owner's choice), which halves premium requests per run.
 
 ## Commands

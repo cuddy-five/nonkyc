@@ -67,6 +67,10 @@ Your reply text is discarded; no one reads it. Only tool calls change anything:
 - Hand off: call the tool named after the next workflow (`planner`, `reviewer`,
   `implementer`, `verifier`, `merge`), passing every input as a string.
 
+Run commands that depend on each other in **one** shell call joined with `&&`, for example
+`npm ci && npm test && npm run smoke`. Parallel tool calls run at the same time, so a test
+started next to `npm ci` sees a half-installed `node_modules`.
+
 Never call `noop`. The loop treats a run that neither hands off nor blocks as stalled.
 Your last tool call is the handoff (or `add_labels` when blocking).
 

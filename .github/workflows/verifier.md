@@ -45,7 +45,8 @@ Issue: #${{ inputs.issue }} · Round: ${{ inputs.round }}
 Trust nothing that earlier roles claimed. The branch `agent/issue-${{ inputs.issue }}` is
 checked out. Re-derive the evidence yourself:
 
-1. From a clean tree run `npm ci`, `npm test`, and `npm run smoke` (live NonKYC API).
+1. From a clean tree run `npm ci && npm test && npm run smoke` as one command (the smoke
+   test calls the live NonKYC API).
 2. Exercise every tool the PR adds or changes through the real MCP server: write a small
    script in `/tmp` that uses the MCP SDK client over stdio against `dist/src/index.js`
    (see `scripts/smoke.ts`) and call each tool against `BTCB2_USDT` and `BTCB2_BTC`.

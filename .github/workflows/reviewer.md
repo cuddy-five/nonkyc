@@ -78,7 +78,7 @@ them), is scope respected, is anything missing that the issue asked for?
 
 The branch `agent/issue-${{ inputs.issue }}` is checked out. Find its open pull request
 with the GitHub tools. Review `git diff origin/main...HEAD` against the newest approved plan
-and its acceptance criteria. Run `npm ci && npm test` yourself. Look for wrong math,
+and its acceptance criteria. Run `npm ci && npm test` yourself, as one command. Look for wrong math,
 off-by-one windows, unhandled API errors, untested branches, schema mismatches with the
 real API (`curl` it), files outside the plan, and weakened tests.
 

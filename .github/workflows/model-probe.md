@@ -14,7 +14,6 @@ concurrency:
   job-discriminator: ${{ github.run_id }}
 permissions:
   contents: read
-  copilot-requests: write
 engine:
   id: copilot
   model: ${{ inputs.model }}

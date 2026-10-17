@@ -55,6 +55,11 @@ checked out. Re-derive the evidence yourself:
    candles or trades.
 4. Check every acceptance criterion in the approved plan.
 
+If live calls fail with a network error (`fetch failed`, `ECONNREFUSED`, timeout), run
+`curl -sS https://api.nonkyc.io/api/v2/ticker/BTCB2_USDT`. A network failure is the
+sandbox, not the PR: post verdict `blocked` with both outputs, add `agent-blocked`, and
+dispatch nothing.
+
 Call `add_comment` once on the issue with marker `role=verifier stage=verify`, listing
 each check, the command you ran, and pass/fail.
 

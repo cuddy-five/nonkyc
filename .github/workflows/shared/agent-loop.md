@@ -9,6 +9,9 @@ tools:
     min-integrity: none
 network:
   allowed: [defaults, node, "api.nonkyc.io"]
+env:
+  # Node fetch ignores HTTPS_PROXY by default; the sandbox only allows traffic via its proxy.
+  NODE_USE_ENV_PROXY: "1"
 runtimes:
   node:
     version: "24"

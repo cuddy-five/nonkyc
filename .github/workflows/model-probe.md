@@ -10,6 +10,7 @@ on:
         type: string
 run-name: "probe ${{ inputs.model }}"
 concurrency:
+  group: "probe-${{ github.run_id }}"
   job-discriminator: ${{ github.run_id }}
 permissions:
   contents: read

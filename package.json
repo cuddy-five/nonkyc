@@ -1,0 +1,27 @@
+{
+  "name": "nonkyc-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for NonKYC.io market data and technical analysis, focused on BTCB2 (Bitcoin Blake2b).",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "nonkyc-mcp": "dist/src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
+    "smoke": "npm run build && node dist/scripts/smoke.js",
+    "start": "node dist/src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  }
+}

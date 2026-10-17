@@ -1,0 +1,47 @@
+name: Agent Handoff
+# Coordinator, not an agent. Runs after every agent workflow:
+# - implementer succeeded -> dispatch the reviewer on the PR it opened or updated
+# - any agent run failed  -> report it on the issue so the loop never stalls silently
+# Agent run names have the form "<role> #<issue> r<round>[ <stage>]".
+on:
+  workflow_run:
+    workflows: [Agent Planner, Agent Reviewer, Agent Implementer, Agent Verifier, Agent Merge]
+    types: [completed]
+permissions: {}
+jobs:
+  handoff:
+    if: github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      issues: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TITLE: ${{ github.event.workflow_run.display_title }}
+      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - name: Route
+        run: |
+          if [[ ! "$TITLE" =~ ^(planner|reviewer|implementer|verifier|merge)\ \#([0-9]+)\ r([0-9]+) ]]; then
+            echo "Not a loop run: $TITLE"; exit 0
+          fi
+          role=${BASH_REMATCH[1]} issue=${BASH_REMATCH[2]} round=${BASH_REMATCH[3]}
+
+          block() {
+            gh issue comment "$issue" --body "<!-- agent-loop role=coordinator stage=$role round=$round verdict=blocked -->
+          ### Loop stopped: $1
+          See $RUN_URL. Fix the cause, remove \`agent-blocked\`, and re-run the failed workflow."
+            gh issue edit "$issue" --add-label agent-blocked
+          }
+
+          if [ "$CONCLUSION" != success ]; then block "$role run ended with $CONCLUSION"; exit 0; fi
+          [ "$role" = implementer ] || exit 0
+
+          pr=$(gh pr list --head "agent/issue-$issue" --state open --json number --jq '.[0].number')
+          if [ -z "$pr" ]; then block "implementer finished without an open PR on agent/issue-$issue"; exit 0; fi
+          gh workflow run reviewer.lock.yml -f issue="$issue" -f stage=code -f round="$round"
+          echo "Dispatched reviewer for PR #$pr (issue #$issue, round $round)" >> "$GITHUB_STEP_SUMMARY"

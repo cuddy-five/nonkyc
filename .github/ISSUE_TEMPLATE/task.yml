@@ -1,0 +1,21 @@
+name: Agent task
+description: Work for the agent loop. Label `agent` to start it now or `agent-queue` to queue it.
+labels: [agent-queue]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What should exist when this is done, in plain words.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Tools, algorithms, endpoints, examples of questions it should answer.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How a reviewer can check it is done.

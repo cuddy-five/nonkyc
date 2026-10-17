@@ -1,0 +1,64 @@
+# Operating the agent loop
+
+## Pieces
+
+| File | Kind | Job |
+|---|---|---|
+| `.github/workflows/planner.md` | gh-aw agent | Triggered by label `agent` or dispatch; posts a plan; dispatches the reviewer. |
+| `.github/workflows/reviewer.md` | gh-aw agent | `stage=plan` or `stage=code`; approves forward or sends back with `round+1`. |
+| `.github/workflows/implementer.md` | gh-aw agent | Round 1 opens PR `agent/issue-N`; later rounds push fixes to it. |
+| `.github/workflows/verifier.md` | gh-aw agent | Clean `npm ci`, `npm test`, `npm run smoke`, live tool calls; dispatches merge or implementer. |
+| `.github/workflows/handoff.yml` | Actions | After the implementer succeeds, dispatches the reviewer. After any agent or merge run fails, comments on the issue and adds `agent-blocked`. |
+| `.github/workflows/merge.yml` | Actions | Refuses `.github/`, `AGENTS.md`, `PROJECT.md` changes; runs `npm test`; squash-merges; closes the issue; starts the next `agent-queue` issue. |
+| `.github/workflows/shared/agent-loop.md` | gh-aw import | Tools, network allowlist, shared safe outputs and loop rules. |
+
+Each `.md` workflow compiles to a `.lock.yml` that Actions runs. After editing a `.md`:
+
+```bash
+gh aw compile          # regenerate every .lock.yml
+```
+
+`gh aw compile` validates the frontmatter and writes the lock files. With no argument
+it compiles every workflow; `gh aw compile reviewer` compiles one. `gh aw validate`
+checks without writing.
+
+## Why the routing looks like this
+
+- Agents cannot push to or merge `main` themselves: gh-aw's `merge-pull-request` refuses the
+  default branch. `merge.yml` is a plain workflow holding `contents: write`.
+- PRs and labels created with `GITHUB_TOKEN` do not trigger other workflows, but
+  `workflow_dispatch` does. Every hop is therefore a dispatch, and `merge.yml` re-runs
+  the tests itself, since `ci.yml` does not fire on agent PRs.
+- The implementer cannot know its PR number when it finishes (gh-aw creates the PR in a
+  later job), so `handoff.yml` waits for the whole run to end and then routes.
+- Threat detection is disabled (owner's choice), which halves premium requests per run.
+
+## Commands
+
+```bash
+gh workflow run planner.lock.yml -f issue=12 -f round=1      # start or restart planning
+gh workflow run reviewer.lock.yml -f issue=12 -f stage=code -f round=2
+gh run list --limit 20                                        # what is running
+gh run watch                                                  # follow one run live
+gh aw logs implementer                                        # download agent logs and usage
+gh aw audit <run-id>                                          # explain one run
+gh variable set AGENTS_PAUSED --body true                     # halt; --body false to resume
+```
+
+`gh workflow run <file> -f key=value` dispatches a workflow; `-f` passes one input per
+flag. `gh run watch` with no ID asks which run to follow. `gh aw logs` takes a workflow
+name and downloads recent runs into `.github/aw/logs/` (git-ignored). Add `-c 5` to
+limit the count.
+
+## Cost
+
+Copilot engine billed as premium requests through `permissions.copilot-requests: write`;
+no secret needed. Roughly one request per agent run: one task is about 4–5 runs when
+nothing bounces, plus 2 per fix round. Models are pinned with `fallback-models`; if a model
+is unavailable on the plan, gh-aw tries the next one.
+
+## Recovering
+
+1. Read the newest `verdict=blocked` comment on the issue and the linked run.
+2. Fix the cause (edit the issue, answer the question, or change a workflow and recompile).
+3. Remove `agent-blocked` and re-dispatch the stage that stopped (commands above).

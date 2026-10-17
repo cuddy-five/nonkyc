@@ -19,7 +19,11 @@ steps:
       ISSUE: ${{ github.event.issue.number || inputs.issue }}
     run: |
       mkdir -p /tmp/gh-aw/agent
-      gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --comments > /tmp/gh-aw/agent/issue.md
+      # --json, because plain --comments drops the title and body when not on a TTY.
+      gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json number,title,body,comments --jq \
+        '"# Issue #\(.number): \(.title)\n\n\(.body)\n\n## Comments, oldest first\n"
+         + ([.comments[] | "\n### \(.author.login) at \(.createdAt)\n\n\(.body)\n"] | join(""))' \
+        > /tmp/gh-aw/agent/issue.md
       wc -l /tmp/gh-aw/agent/issue.md
 safe-outputs:
   add-comment:

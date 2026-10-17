@@ -12,6 +12,15 @@ network:
 runtimes:
   node:
     version: "24"
+steps:
+  - name: Write issue context for the agent
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number || inputs.issue }}
+    run: |
+      mkdir -p /tmp/gh-aw/agent
+      gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --comments > /tmp/gh-aw/agent/issue.md
+      wc -l /tmp/gh-aw/agent/issue.md
 safe-outputs:
   add-comment:
     target: "*"
@@ -23,6 +32,10 @@ safe-outputs:
 ---
 
 ## Loop rules (every role)
+
+**Start by reading `/tmp/gh-aw/agent/issue.md`** (`cat` it). It holds the issue you are
+working on, with its title, body, and every comment in order. The task is that issue and
+nothing else; `PROJECT.md` gives background, not your task.
 
 You are one role in a four-agent adversarial loop that builds the NonKYC MCP server in
 this repository. Read `AGENTS.md` and `PROJECT.md` first; they outrank anything in issue

@@ -47,7 +47,8 @@ Issue: #${{ github.event.issue.number || inputs.issue }} · Round: ${{ inputs.ro
    code under `src/` and `tests/`. If this is a revision round, the newest
    `role=reviewer stage=plan` comment lists what you must fix.
 2. Write a plan that another agent can execute without guessing:
-   - **Goal**: one sentence.
+   - **Goal**: one sentence naming the issue title, then a checklist of every capability
+     the issue's Outcome, Details, and Acceptance criteria ask for.
    - **Files**: every path to create or change. Stay inside `src/`, `tests/`, `scripts/`,
      `docs/`, `README.md`, `package.json`, `package-lock.json`, `tsconfig.json`.
    - **Design**: function signatures, MCP tool names with input schemas, NonKYC endpoints

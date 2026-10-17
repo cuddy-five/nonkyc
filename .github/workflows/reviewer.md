@@ -61,7 +61,11 @@ criterion yourself.
 ## Stage `plan`
 
 Review the newest `role=planner stage=plan` comment on the issue against the issue's
-request, `AGENTS.md`, and `PROJECT.md`. Check: are formulas correct and standard, are
+request, `AGENTS.md`, and `PROJECT.md`.
+
+First gate: list every capability the issue's Outcome, Details, and Acceptance criteria ask
+for, and find each one in the plan. If the plan targets something else or leaves any out,
+reject now and say which. Then check: are formulas correct and standard, are
 expected test values actually right (recompute them), are NonKYC endpoints real (`curl`
 them), is scope respected, is anything missing that the issue asked for?
 

@@ -32,13 +32,17 @@ checkout:
 steps:
   - name: Call every tool live, outside the sandbox
     run: |
-      out=/tmp/gh-aw/agent/live.md
+      out=/tmp/gh-aw/agent/live.md body=/tmp/gh-aw/live-body.md
       mkdir -p /tmp/gh-aw/agent
       { npm ci && npm run build || echo "BUILD FAILED"
         echo "# npm run smoke"; node dist/scripts/smoke.js 2>&1 || echo "SMOKE FAILED (exit $?)"
-        node .github/scripts/live-dump.mjs 2>&1 || echo "LIVE DUMP FAILED (exit $?)"
-      } > "$out" 2>&1
-      grep -E '^## |FAILED|ERROR' "$out" || true
+        # The script lives on main; the PR branch may predate it. Under node_modules so the SDK resolves.
+        git show "$GITHUB_SHA:.github/scripts/live-dump.mjs" > node_modules/.live-dump.mjs
+        node node_modules/.live-dump.mjs 2>&1 || echo "LIVE DUMP FAILED (exit $?)"
+      } > "$body" 2>&1
+      if grep -qE 'FAILED|— ERROR' "$body"; then verdict=FAIL; else verdict=PASS; fi
+      { echo "LIVE RESULT: $verdict"; echo; cat "$body"; } > "$out"
+      grep -E '^LIVE RESULT|^## |FAILED|ERROR' "$out" || true
 imports:
   - shared/agent-loop.md
 safe-outputs:
@@ -59,7 +63,8 @@ checked out. Re-derive the evidence yourself:
 1. From a clean tree run `npm ci && npm test` as one command.
 2. Read `/tmp/gh-aw/agent/live.md`. A step outside the sandbox built this branch, ran
    `npm run smoke`, and called every tool against `BTCB2_USDT` and `BTCB2_BTC` on the live
-   API. Any `FAILED` or `ERROR` there is a failure of the PR. Check outputs are plausible:
+   API. Its first line is `LIVE RESULT: PASS` or `LIVE RESULT: FAIL`. **FAIL means your
+   verdict is `fail`**: quote the failing lines in your findings. On PASS, check outputs are plausible:
    prices positive, numbers parsed (not strings), indicator values within their defined
    range (e.g. RSI in 0..100), array lengths matching inputs, no NaN.
 3. Spot-check at least one value against the raw API with `curl`, and recompute one

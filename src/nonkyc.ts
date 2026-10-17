@@ -47,6 +47,34 @@ export function normalizeTickerId(input: string): string {
   return id;
 }
 
+export interface Market {
+  symbol: string;
+  base: string;
+  quote: string;
+  active: boolean;
+}
+
+export interface Orderbook {
+  bids: [number, number][];
+  asks: [number, number][];
+}
+
+export interface Trade {
+  price: number;
+  quantity: number;
+  side: "buy" | "sell";
+  timestamp: number;
+}
+
+export interface Candle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export class NonkycClient {
   private readonly baseUrl: string;
   private readonly fetch: Fetch;
@@ -75,5 +103,60 @@ export class NonkycClient {
 
   getTicker(market: string): Promise<Ticker> {
     return this.request<Ticker>(`/ticker/${normalizeTickerId(market)}`);
+  }
+
+  async listMarkets(): Promise<Market[]> {
+    const data = await this.request<any[]>(`/markets`);
+    return data.map((m) => ({
+      symbol: m.symbol,
+      base: m.base,
+      quote: m.quote,
+      active: Boolean(m.active),
+    }));
+  }
+
+  async getOrderbook(market: string, depth: number): Promise<Orderbook> {
+    const data = await this.request<any>(`/orderbook`, {
+      ticker_id: normalizeTickerId(market),
+      depth,
+    });
+    return {
+      bids: (data.bids ?? []).map(([p, q]: [string, string]) => [Number(p), Number(q)]),
+      asks: (data.asks ?? []).map(([p, q]: [string, string]) => [Number(p), Number(q)]),
+    };
+  }
+
+  async getTrades(market: string, limit: number): Promise<Trade[]> {
+    const data = await this.request<any[]>(`/historical_trades`, {
+      ticker_id: normalizeTickerId(market),
+      limit,
+    });
+    // Live API: price, base_volume, target_volume, trade_timestamp, type
+    return data.map((t) => ({
+      price: Number(t.price),
+      quantity: Number(t.base_volume ?? t.quantity ?? 0),
+      side: t.type ?? t.side,
+      timestamp: Number(t.trade_timestamp ?? t.timestamp ?? 0),
+    }));
+  }
+
+  async getCandles(market: string, resolution: number, count: number): Promise<Candle[]> {
+    const resp = await this.request<any>(`/market/candles`, {
+      symbol: normalizeTickerId(market).replace("_", "/"),
+      resolution,
+      countBack: count,
+      firstDataRequest: 1,
+    });
+    // Live API: { bars: [ ... ], meta: ... }
+    const bars = Array.isArray(resp) ? resp : resp?.bars;
+    if (!Array.isArray(bars)) return [];
+    return bars.map((c: any) => ({
+      time: Number(c.time),
+      open: Number(c.open),
+      high: Number(c.high),
+      low: Number(c.low),
+      close: Number(c.close),
+      volume: Number(c.volume),
+    }));
   }
 }

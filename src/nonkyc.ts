@@ -131,22 +131,26 @@ export class NonkycClient {
       ticker_id: normalizeTickerId(market),
       limit,
     });
+    // Live API: price, base_volume, target_volume, trade_timestamp, type
     return data.map((t) => ({
       price: Number(t.price),
-      quantity: Number(t.quantity),
-      side: t.side,
-      timestamp: Number(t.timestamp),
+      quantity: Number(t.base_volume ?? t.quantity ?? 0),
+      side: t.type ?? t.side,
+      timestamp: Number(t.trade_timestamp ?? t.timestamp ?? 0),
     }));
   }
 
   async getCandles(market: string, resolution: number, count: number): Promise<Candle[]> {
-    const data = await this.request<any[]>(`/market/candles`, {
+    const resp = await this.request<any>(`/market/candles`, {
       symbol: normalizeTickerId(market).replace("_", "/"),
       resolution,
       countBack: count,
       firstDataRequest: 1,
     });
-    return data.map((c) => ({
+    // Live API: { bars: [ ... ], meta: ... }
+    const bars = Array.isArray(resp) ? resp : resp?.bars;
+    if (!Array.isArray(bars)) return [];
+    return bars.map((c: any) => ({
       time: Number(c.time),
       open: Number(c.open),
       high: Number(c.high),

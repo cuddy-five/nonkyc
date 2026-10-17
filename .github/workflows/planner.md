@@ -41,8 +41,7 @@ safe-outputs:
 
 # Role: planner (constructive)
 
-Issue: #${{ github.event.issue.number }}${{ inputs.issue }}
-Round: ${{ inputs.round }} (empty means 1)
+Issue: #${{ github.event.issue.number || inputs.issue }} · Round: ${{ inputs.round || '1' }}
 
 1. Read the issue, every `agent-loop` comment on it, `AGENTS.md`, `PROJECT.md`, and the
    code under `src/` and `tests/`. If this is a revision round, the newest
@@ -58,10 +57,10 @@ Round: ${{ inputs.round }} (empty means 1)
      fake-fetch routes needed. No live network in unit tests.
    - **Acceptance criteria**: numbered `AC1..ACn`, each checkable by a reviewer.
    - **Risks and rollback**.
-3. Post it as one issue comment with marker
+3. Call `add_comment` with the whole plan as `body`, starting with the marker
    `<!-- agent-loop role=planner stage=plan round=<n> verdict=proposed -->`.
-4. Dispatch the `reviewer` workflow with inputs `issue` = the issue number,
-   `stage` = `plan`, `round` = the same round number.
+4. Call the `reviewer` tool with `issue` = the issue number, `stage` = `"plan"`,
+   `round` = the same round number.
 
 Do not write code. If the issue is too vague to plan, post verdict `blocked` with the
 questions a human must answer, add `agent-blocked`, and dispatch nothing.

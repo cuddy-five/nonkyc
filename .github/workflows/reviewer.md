@@ -65,10 +65,10 @@ request, `AGENTS.md`, and `PROJECT.md`. Check: are formulas correct and standard
 expected test values actually right (recompute them), are NonKYC endpoints real (`curl`
 them), is scope respected, is anything missing that the issue asked for?
 
-- Approve: post a comment with verdict `approve`, then dispatch `implementer` with
-  `issue` and `round` = `1`.
-- Reject: post verdict `changes` with numbered findings, then dispatch `planner` with
-  `issue` and `round` = current round + 1 (unless round is 3: block instead).
+- Approve: `add_comment` with verdict `approve`, then call the `implementer` tool with
+  `issue` and `round` = `"1"`.
+- Reject: `add_comment` with verdict `changes` and numbered findings, then call the
+  `planner` tool with `issue` and `round` = current round + 1 (unless round is 3: block instead).
 
 ## Stage `code`
 
@@ -78,9 +78,9 @@ and its acceptance criteria. Run `npm ci && npm test` yourself. Look for wrong m
 off-by-one windows, unhandled API errors, untested branches, schema mismatches with the
 real API (`curl` it), files outside the plan, and weakened tests.
 
-- Leave inline comments for concrete defects, then submit one `COMMENT` review on the PR
-  summarizing your verdict per acceptance criterion.
-- Post the verdict on the issue as well (marker with `stage=code`).
-- Approve: dispatch `verifier` with `issue` and `round` = current round.
-- Reject: dispatch `implementer` with `issue` and `round` = current round + 1 (unless
+- `create_pull_request_review_comment` for each concrete defect, then
+  `submit_pull_request_review` with event `COMMENT` and your verdict per acceptance criterion.
+- `add_comment` on the issue with the verdict (marker with `stage=code`).
+- Approve: call the `verifier` tool with `issue` and `round` = current round.
+- Reject: call the `implementer` tool with `issue` and `round` = current round + 1 (unless
   round is 3: block instead).

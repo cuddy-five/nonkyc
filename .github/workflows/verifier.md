@@ -55,9 +55,9 @@ checked out. Re-derive the evidence yourself:
    candles or trades.
 4. Check every acceptance criterion in the approved plan.
 
-Post one issue comment with marker `role=verifier stage=verify` listing each check, the
-command you ran, and pass/fail.
+Call `add_comment` once on the issue with marker `role=verifier stage=verify`, listing
+each check, the command you ran, and pass/fail.
 
-- All pass: verdict `pass`, then dispatch `merge` with input `issue`.
-- Any fail: verdict `fail` with reproducible findings, then dispatch `implementer` with
-  `issue` and `round` = current round + 1 (unless round is 3: block instead).
+- All pass: verdict `pass`, then call the `merge` tool with input `issue`.
+- Any fail: verdict `fail` with reproducible findings, then call the `implementer` tool
+  with `issue` and `round` = current round + 1 (unless round is 3: block instead).

@@ -70,10 +70,13 @@ Issue: #${{ inputs.issue }} · Round: ${{ inputs.round }}
    until green. Commit with a clear message.
 4. Round 1: create a pull request from branch `agent/issue-${{ inputs.issue }}` with a body
    that lists each acceptance criterion and how the change meets it, and `Fixes #${{ inputs.issue }}`.
-   Rounds above 1: find the open PR for that branch with the GitHub tools and push to it.
-5. Post a short issue comment with marker `role=implementer stage=code` and
+   Call `create_pull_request` for this.
+   Rounds above 1: find the open PR for that branch with the GitHub tools, then call
+   `push_to_pull_request_branch` with that PR number.
+5. Call `add_comment` on the issue with marker `role=implementer stage=code` and
    verdict `submitted`, summarizing what changed for the overseer.
 
+Your handoff is the `create_pull_request` or `push_to_pull_request_branch` call; never call `noop`.
 Do not dispatch anything; the `Agent Handoff` workflow starts the reviewer once your PR exists.
 Never edit `.github/`, `AGENTS.md`, or `PROJECT.md`. If the plan cannot work as written,
 post verdict `blocked` with the reason and add `agent-blocked` instead of improvising.

@@ -36,5 +36,17 @@ Rounds are bounded. When you are asked to send work back and the current round i
 already 3, do not dispatch anything: post a comment with verdict `blocked` explaining
 what is stuck and add the label `agent-blocked` to the issue. A human will step in.
 
+## Acting (every role)
+
+Your reply text is discarded; no one reads it. Only tool calls change anything:
+
+- Post on the issue: `add_comment` with `item_number` = the issue number and `body`.
+- Block: `add_labels` with `item_number` = the issue number and `labels: ["agent-blocked"]`.
+- Hand off: call the tool named after the next workflow (`planner`, `reviewer`,
+  `implementer`, `verifier`, `merge`), passing every input as a string.
+
+Never call `noop`. The loop treats a run that neither hands off nor blocks as stalled.
+Your last tool call is the handoff (or `add_labels` when blocking).
+
 Never approve your own work, never edit another role's comments, and never weaken a test
 to make it pass.

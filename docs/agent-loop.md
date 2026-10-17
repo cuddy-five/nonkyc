@@ -34,6 +34,10 @@ checks without writing.
 - Runs started by `GITHUB_TOKEN` do not emit `workflow_run`, so `handoff.yml` cannot rely
   on it after the first hop. It sweeps on a 5-minute schedule instead; GitHub may delay
   scheduled runs, so a stage can take a few extra minutes to start.
+- Inside the agent sandbox `curl` reaches the API (agents run with `--allow-all-urls`;
+  the firewall still limits domains), but Node `fetch` does not. The verifier therefore
+  gets live results from a pre-step outside the sandbox (`.github/scripts/live-dump.mjs`
+  writes `/tmp/gh-aw/agent/live.md`), and `merge.yml` runs `npm run smoke` itself.
 - Agent comments come from `github-actions[bot]`. The GitHub MCP integrity filter hides
   those by default, so the shared import sets `min-integrity: none`.
 - Threat detection is disabled (owner's choice), which halves premium requests per run.

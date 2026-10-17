@@ -28,6 +28,7 @@ permissions:
 engine:
   id: copilot
   model: gpt-4.1
+  args: ["--allow-all-urls"]
 timeout-minutes: 20
 imports:
   - shared/agent-loop.md

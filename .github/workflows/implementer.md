@@ -24,6 +24,7 @@ permissions:
 engine:
   id: copilot
   model: gpt-4.1
+  args: ["--allow-all-urls"]
 timeout-minutes: 40
 checkout:
   ref: ${{ inputs.round == '1' && github.ref || format('agent/issue-{0}', inputs.issue) }}

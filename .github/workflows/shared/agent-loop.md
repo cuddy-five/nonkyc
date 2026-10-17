@@ -9,9 +9,6 @@ tools:
     min-integrity: none
 network:
   allowed: [defaults, node, "api.nonkyc.io"]
-env:
-  # Node fetch ignores HTTPS_PROXY by default; the sandbox only allows traffic via its proxy.
-  NODE_USE_ENV_PROXY: "1"
 runtimes:
   node:
     version: "24"
@@ -66,6 +63,11 @@ Your reply text is discarded; no one reads it. Only tool calls change anything:
 - Block: `add_labels` with `item_number` = the issue number and `labels: ["agent-blocked"]`.
 - Hand off: call the tool named after the next workflow (`planner`, `reviewer`,
   `implementer`, `verifier`, `merge`), passing every input as a string.
+
+Network in the sandbox: `curl` reaches `https://api.nonkyc.io` (use it to see real response
+shapes before writing parsers), but Node cannot, so `npm run smoke` and other live Node
+calls fail here with `fetch failed`. That is the sandbox, not the code. Live tool calls are
+run for you outside the sandbox where a role needs them.
 
 Run commands that depend on each other in **one** shell call joined with `&&`, for example
 `npm ci && npm test && npm run smoke`. Parallel tool calls run at the same time, so a test

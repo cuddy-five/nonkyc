@@ -55,6 +55,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run smoke
       - name: Squash-merge and close the issue
         env:
           PR: ${{ steps.pr.outputs.number }}
@@ -62,7 +63,7 @@ jobs:
           gh pr merge "$PR" --squash --delete-branch
           gh issue comment "$ISSUE" --body "<!-- agent-loop role=coordinator stage=merge round=0 verdict=merged -->
           ### Merged
-          PR #$PR passed review, verification, and a fresh \`npm test\`, and is now on \`main\`."
+          PR #$PR passed review, verification, and a fresh \`npm test\` and \`npm run smoke\`, and is now on \`main\`."
           gh issue close "$ISSUE" --reason completed || true
       - name: Start the next queued issue
         run: |

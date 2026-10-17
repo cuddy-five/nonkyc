@@ -23,8 +23,7 @@ permissions:
   copilot-requests: write
 engine:
   id: copilot
-  model: gpt-5.6-luna
-  fallback-models: [mai-code-1.1-flash, gpt-5.4-mini]
+  model: gpt-4.1
 timeout-minutes: 40
 checkout:
   ref: ${{ inputs.round == '1' && github.ref || format('agent/issue-{0}', inputs.issue) }}
@@ -34,6 +33,7 @@ imports:
   - shared/agent-loop.md
 safe-outputs:
   threat-detection: false
+  report-failure-as-issue: false
   create-pull-request:
     title-prefix: "[agent] "
     labels: [agent-pr]
@@ -62,7 +62,8 @@ Issue: #${{ inputs.issue }} · Round: ${{ inputs.round }}
 1. Read the issue, the newest `role=planner stage=plan` comment that a reviewer approved,
    `AGENTS.md`, and `PROJECT.md`. In rounds above 1, also read the newest reviewer or
    verifier findings (issue comments and PR review comments) and address every one.
-2. Implement exactly the approved plan. Follow the existing patterns: pure functions in
+2. Round 1: run `git checkout -b agent/issue-${{ inputs.issue }}` first. Later rounds are
+   already on that branch. Implement exactly the approved plan. Follow the existing patterns: pure functions in
    `src/analysis/`, network only through `NonkycClient` in `src/nonkyc.ts`, tools
    registered in `src/server.ts`, tests in `tests/` using the fake fetch helper.
 3. Run `npm ci` (or `npm install <pkg>` if the plan adds a dependency) and `npm test`

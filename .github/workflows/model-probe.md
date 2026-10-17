@@ -25,6 +25,7 @@ tools:
   github: false
 safe-outputs:
   threat-detection: false
+  report-failure-as-issue: false
 ---
 
 Reply with the single word OK and call the `noop` tool.

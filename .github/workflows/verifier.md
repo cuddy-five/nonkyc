@@ -23,8 +23,7 @@ permissions:
   copilot-requests: write
 engine:
   id: copilot
-  model: mai-code-1.1-flash
-  fallback-models: [grok-4.7, gpt-5.6-luna]
+  model: gpt-4.1
 timeout-minutes: 25
 checkout:
   ref: agent/issue-${{ inputs.issue }}
@@ -33,6 +32,7 @@ imports:
   - shared/agent-loop.md
 safe-outputs:
   threat-detection: false
+  report-failure-as-issue: false
   dispatch-workflow:
     workflows: [merge, implementer]
     max: 1

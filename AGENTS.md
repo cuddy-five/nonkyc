@@ -24,14 +24,15 @@ issue labeled `agent`
 
 | Role | Stance | Model (Copilot) | Produces | May never |
 |---|---|---|---|---|
-| planner | Constructive | gpt-5.6-luna | plan comment | write code |
-| reviewer | Adversarial | grok-4.7 → mai-code-1.1-flash | plan and code verdicts, PR review | fix what it finds |
-| implementer | Constructive | gpt-5.6-luna | PR on `agent/issue-N` | review or verify its own change |
-| verifier | Skeptical | mai-code-1.1-flash → grok-4.7 | evidence comment | reuse anyone else's test run |
+| planner | Constructive | gpt-4.1 | plan comment | write code |
+| reviewer | Adversarial | gpt-4.1 | plan and code verdicts, PR review | fix what it finds |
+| implementer | Constructive | gpt-4.1 | PR on `agent/issue-N` | review or verify its own change |
+| verifier | Skeptical | gpt-4.1 | evidence comment | reuse anyone else's test run |
 | handoff, merge | Deterministic workflows | none | routing, merge | use judgement |
 
-Review roles run on a different model family than the implementer where the plan
-allows, so blind spots do not line up.
+All roles run `gpt-4.1`: on this Copilot plan, Actions accepts no other model (probed
+2026-10-16 with `model-probe.md`). The adversarial split comes from the role prompts.
+To get other models, see "Models" in `docs/agent-loop.md`.
 
 ## Non-negotiables
 

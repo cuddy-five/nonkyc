@@ -54,8 +54,24 @@ limit the count.
 
 Copilot engine billed as premium requests through `permissions.copilot-requests: write`;
 no secret needed. Roughly one request per agent run: one task is about 4–5 runs when
-nothing bounces, plus 2 per fix round. Models are pinned with `fallback-models`; if a model
-is unavailable on the plan, gh-aw tries the next one.
+nothing bounces, plus 2 per fix round.
+
+## Models
+
+Actions calls Copilot with the workflow's `GITHUB_TOKEN`. On this plan that token reaches
+only `gpt-4.1`; every other model returns `400 The requested model is not supported`, even
+models the owner's local Copilot CLI can use. `fallback-models` does not help: the harness
+does not retry after `model_not_supported`. To test a model:
+
+```bash
+gh workflow run model-probe.lock.yml -f model=gpt-5.4
+```
+
+To run agents as the owner instead (same models as the local CLI), add a fine-grained
+PAT with the **Copilot Requests** permission as secret `COPILOT_GITHUB_TOKEN`, then remove
+`copilot-requests: write` from each agent's `permissions:` and recompile. Without that
+permission gh-aw reads the secret instead of `GITHUB_TOKEN`. Then re-probe and pin models
+per role.
 
 ## Recovering
 

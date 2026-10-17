@@ -28,8 +28,7 @@ permissions:
   copilot-requests: write
 engine:
   id: copilot
-  model: grok-4.7
-  fallback-models: [mai-code-1.1-flash, gpt-5.6-luna]
+  model: gpt-4.1
 timeout-minutes: 25
 checkout:
   ref: ${{ inputs.stage == 'code' && format('agent/issue-{0}', inputs.issue) || github.ref }}
@@ -38,6 +37,7 @@ imports:
   - shared/agent-loop.md
 safe-outputs:
   threat-detection: false
+  report-failure-as-issue: false
   submit-pull-request-review:
     target: "*"
     allowed-events: [COMMENT]

@@ -27,13 +27,13 @@ permissions:
   copilot-requests: write
 engine:
   id: copilot
-  model: gpt-5.6-luna
-  fallback-models: [gpt-5.4-mini]
+  model: gpt-4.1
 timeout-minutes: 20
 imports:
   - shared/agent-loop.md
 safe-outputs:
   threat-detection: false
+  report-failure-as-issue: false
   dispatch-workflow:
     workflows: [reviewer]
     max: 1
